@@ -1,11 +1,8 @@
-from random import randint
-from Crypto.Hash import SHA256
-from operator import xor
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad, unpad
-from os import urandom
 from bcrypt import hashpw
 from nltk.corpus import words
+from time import perf_counter
+from multiprocessing import Pool, cpu_count
+from math import ceil
 
 database = [word for word in words.words() if 6 <= len(word) <= 10]
 shadow = [
@@ -25,18 +22,50 @@ shadow = [
 "Bofur: $2b$12$rMeWZtAVcGHLEiDNeKCz8Ose2KNe821.l2h5eLffzWoP01DlQb72O",
 "Durin: $2b$13$6ypcazOOkUT/a7EwMuIjH.qbdqmHPDAC9B5c37RT9gEw18BX6FOay"]
 
-for user in shadow:
-    #Gets everything before the space
-    user = user.split()
-    username = user[0]
-    salt = bytes(user[1][:29],"utf-8")
-    password = bytes(user[1][29:],"utf-8")
 
-    for phrase in database:
-        attempt = hashpw(bytes(), b"$2b$08$J9FW66ZdPI2nrIMcOxFYI.")
+def chunked(lst, n_chunks):
+    L = len(lst)
+    if n_chunks <= 0:
+        return []
+    chunk_size = ceil(L / n_chunks)
+    return [lst[i*chunk_size : (i+1)*chunk_size] for i in range(n_chunks)]
 
-ans= hashpw(b"registrationsucks", b"$2b$08$J9FW66ZdPI2nrIMcOxFYI.")
+def brute_force(username, salt, password, chunk):
+    start = perf_counter()
+    for phrase in chunk:
+        attempt = hashpw(bytes(phrase, "utf-8"), salt)
+        if (attempt == password):
+            end = perf_counter()
+            print(f"Password found! {username}'s password is '{phrase}'.\nTime Elapsed to crack the password was {end-start} seconds")
+            return
 
-print(ans == b'$2b$08$J9FW66ZdPI2nrIMcOxFYI.zKGJsUXmWLAYWsNmIANUy5JbSjfyLFu')
+def wrapper(args_tuple):
+    username, salt, password, chunk = args_tuple
+    return brute_force(username, salt, password, chunk)
+
+def main():
+    processes = cpu_count()-1
+    chunks = chunked(database, processes) 
+
+    for user in shadow:
+        #Gets everything before the space
+        user = user.split()
+        username = user[0][:-1]
+        salt = bytes(user[1][:29],"utf-8")
+        password = bytes(user[1],"utf-8")
+        
+        args = [(username, salt, password, c) for c in chunks]
+
+        print(f"Attempting to break {username}'s password\n")
+
+        with Pool(processes) as pool:
+            for result in pool.imap_unordered(wrapper, args):
+                if result is not None:
+                    pool.terminate()
+                    pool.join()
+                    break
+            
 
 
+if __name__ == "__main__":
+    main()
