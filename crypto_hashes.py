@@ -36,7 +36,7 @@ def brute_force(username, salt, password, chunk):
         attempt = hashpw(bytes(phrase, "utf-8"), salt)
         if (attempt == password):
             end = perf_counter()
-            print(f"Password found! {username}'s password is '{phrase}'.\nTime Elapsed to crack the password was {end-start} seconds")
+            print(f"Password found! {username}'s password is '{phrase}'.\nTime Elapsed to crack the password was {end-start} seconds\n")
             return
 
 def wrapper(args_tuple):
