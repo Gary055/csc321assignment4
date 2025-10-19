@@ -7,8 +7,7 @@ from os import urandom
 from bcrypt import hashpw
 from nltk.corpus import words
 
-database = words.words()
-datbase = 
+database = [word for word in words.words() if 6 <= len(word) <= 10]
 shadow = [
 "Bilbo: $2b$08$J9FW66ZdPI2nrIMcOxFYI.qx268uZn.ajhymLP/YHaAsfBGP3Fnmq",
 "Gandalf: $2b$08$J9FW66ZdPI2nrIMcOxFYI.q2PW6mqALUl2/uFvV9OFNPmHGNPa6YC",
@@ -30,8 +29,11 @@ for user in shadow:
     #Gets everything before the space
     user = user.split()
     username = user[0]
-    salt = user[1][:29]
-    password = user[1][29:]
+    salt = bytes(user[1][:29],"utf-8")
+    password = bytes(user[1][29:],"utf-8")
+
+    for phrase in database:
+        attempt = hashpw(bytes(), b"$2b$08$J9FW66ZdPI2nrIMcOxFYI.")
 
 ans= hashpw(b"registrationsucks", b"$2b$08$J9FW66ZdPI2nrIMcOxFYI.")
 
