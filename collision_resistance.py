@@ -7,6 +7,7 @@ import os
 import hashlib
 import random
 import binascii
+import time
 
 def out_hash_256(input : bytes) -> None:
     # byt = input.encode('utf-8')
@@ -34,9 +35,38 @@ def flip_bit(b: bytes, bit_index: int) -> bytes:
 base = os.urandom(16)
 for i in range(10):
     bit_to_flip = random.randrange(0, len(base) * 8)
-    altered = flip_bit(base, bit_to_flip)
+    modified = flip_bit(base, bit_to_flip)
     h1 = out_hash_256(base)
-    h2 = out_hash_256(altered)
+    h2 = out_hash_256(modified)
     print(f"Example {i+1}: flipped bit #{bit_to_flip}")
-    print(f" Base   ({binascii.hexlify(base).decode()}): {h1}")
-    print(f" Altered({binascii.hexlify(altered).decode()}): {h2}\n")
+    print(f"Base    ({binascii.hexlify(base).decode()}): {h1}")
+    print(f"Modified({binascii.hexlify(modified).decode()}): {h2}\n")
+
+def truncate(digest : bytes, seg : int):
+    dig_int = int.from_bytes(digest, 'big')
+    return dig_int & ((1 << seg) - 1)
+
+def birthday_attack(domain : int, tries_limit : int = 10000000):
+    table = {}
+    for i in range(int(tries_limit)):
+        msg = i.to_bytes(8, 'big') + os.urandom(8)
+        dig = hashlib.sha256(msg).digest()
+        tru = truncate(dig, domain)
+        if tru in table:
+            other = table[tru]
+            if other != msg:
+                return other, msg, tru, i+1
+        else:
+            table[tru] = msg
+    return None
+
+results = {}
+for i in range(8, 52, 2):
+    start = time.time()
+    expected = 4 * (2 ** (i / 2))
+    fir, sec, te, tries = birthday_attack(i, max(expected, 10000000))
+    tot = time.time() - start
+    print(f"Collision iteration {i} bits in {tries} tries, time {tot}")
+    print(f"M1: {fir}")
+    print(f"M2: {sec}")
+    print(f"Truncated: {te}")
