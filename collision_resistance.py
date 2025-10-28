@@ -8,6 +8,7 @@ import hashlib
 import random
 import binascii
 import time
+import matplotlib.pyplot as plt
 
 def out_hash_256(input : bytes) -> None:
     # byt = input.encode('utf-8')
@@ -70,3 +71,15 @@ for i in range(8, 52, 2):
     print(f"M1: {fir}")
     print(f"M2: {sec}")
     print(f"Truncated: {te}")
+    results[i] = (fir, sec, te, tries)
+
+keys = results.keys()
+values = results.values()
+st_1, st_2 = [], []
+for i in values:
+    st_1.append(i[2])
+    st_2.append(i[3])
+plt.plot(keys, st_1)
+plt.savefig('digest_vs_inputs.png')
+plt.plot(keys, st_2)
+plt.savefig('digest_vs_time.png')
